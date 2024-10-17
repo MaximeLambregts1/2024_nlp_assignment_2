@@ -14,7 +14,7 @@ if __name__ == '__main__':
     df = df.dropna(subset=['content'])
 
     # filter Nvidia articles
-    df = filter_articles(df, ['Nvidia'])
+    df = filter_articles(df, ['Nvidia', 'nvda'])
 
     # save original content
     df['original_content'] = df['content']
