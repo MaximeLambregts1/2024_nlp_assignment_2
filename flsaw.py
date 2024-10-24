@@ -6,23 +6,21 @@ from FuzzyTM import FLSA_W
 from nltk.tokenize import word_tokenize
 import re
 # from unidecode import unidecode
-from nltk.corpus import stopwords
-stop_words = set(stopwords.words('english'))
 from collections import Counter
 import matplotlib as plt
 
 # import data, source: https://towardsdatascience.com/fuzzytm-a-python-package-for-fuzzy-topic-models-fd3c3f0ae060
-df = pd.read_csv('data/nvidia_articles.csv', converters={'content': literal_eval})
+df = pd.read_csv('data/nvidia_articles.csv', converters={'stemmed_content': literal_eval})
 
 #Convert data to list of lists
-data = df['content'].values.tolist()
+data = df['stemmed_content'].values.tolist()
 
 #Create word counter
 all_words = [word for doc in data for word in doc]
 word_freq = Counter(all_words)
 
 #First iteration of making sense
-nr_of_topics = list(range(1,11))
+nr_of_topics = list(range(9,11))
 dict_coherence_score = {}
 topic_dict = {}
 
@@ -85,8 +83,8 @@ def replace_and_remove_words_in_data(data, replace_words, replacement_words, wor
     return data
 
 
-replace_words = ['nvda', 'minds', 'books', 'corp', 'amzn', 'kem', 'sept']
-replacement_words = ['nvidia', 'mind', 'book', 'corporation', 'amazon', 'kemet', 'september']
+replace_words = ['nvda', 'corp', 'amzn', 'kem', 'sept']
+replacement_words = ['nvidia', 'corporation', 'amazon', 'kemet', 'september']
 
 words_to_remove = ['equitiesasian']
 
