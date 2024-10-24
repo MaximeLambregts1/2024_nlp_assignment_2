@@ -28,6 +28,12 @@ if __name__ == '__main__':
     # remove stop words
     stop_words = set(stopwords.words('english'))
     df['content'] = df['content'].apply(lambda x: [word for word in x if word not in stop_words])
+    
+    # stem content
+    df['stemmed_content'] = df['content'].apply(lemmatize_list)
+
+    # lemmatize content
+    df['lemmatized_content'] = df['content'].apply(stem_list)
 
     # save file
     df.to_csv('./data/nvidia_articles.csv', index=False)
