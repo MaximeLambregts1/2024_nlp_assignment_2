@@ -30,10 +30,10 @@ if __name__ == '__main__':
     df['content'] = df['content'].apply(lambda x: [word for word in x if word not in stop_words])
     
     # stem content
-    df['stemmed_content'] = df['content'].apply(lemmatize_list)
+    df['stemmed_content'] = df['content'].apply(stem_list)
 
     # lemmatize content
-    df['lemmatized_content'] = df['content'].apply(stem_list)
+    df['lemmatized_content'] = df['content'].apply(lemmatize_list)
 
     # save file
     df.to_csv('./data/nvidia_articles.csv', index=False)
