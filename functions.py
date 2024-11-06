@@ -1,4 +1,7 @@
 import re
+import pandas as pd
+import matplotlib.pyplot as plt
+
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 from gensim.corpora import Dictionary
 from gensim.models import LdaMulticore
@@ -34,7 +37,7 @@ def stem_list(text):
     return stemmed_text
 
 class LDA:
-    def __init__(self, docs, n_min=None, p_max=None, n_topics=10, use_tfidf=False):
+    def __init__(self, docs, n_min=None, p_max=None, n_topics=10, use_tfidf=False, custom_stopwords=None):
         self.docs = docs
         self.n_min = n_min
         self.p_max = p_max
@@ -44,8 +47,16 @@ class LDA:
         self.model = None
         self.id2word = None
         self.docs_matrix = None # tfidf or bow
+        if custom_stopwords is not None:
+            self.filterwords.extend(custom_stopwords)
+            self.filter_docs()
 
     def get_filter_words(self, n_min, p_max):
+        if n_min is None:
+            n_min = 0
+        if p_max is None:
+            p_max = 1        
+
         all_content = list(self.docs)
         all_words = [item for row in all_content for item in row]
         unique_words = set(all_words)
@@ -79,7 +90,6 @@ class LDA:
         # filter words
         if self.n_min is not None or self.p_max is not None:
             self.get_filter_words(n_min=self.n_min, p_max=self.p_max)
-            print(f'Filtering {len(self.filterwords)} words')
             self.filter_docs()
 
         # get dictionary
@@ -102,15 +112,51 @@ class LDA:
         coherence_lda = coherence_model_lda.get_coherence()
         return coherence_lda
     
-    def topic_variability(self):
+    def diversity_score(self, n_words=10):
         all_topic_words = []
         for i in range(self.n_topics):
-            topic_words = [x[0] for x in self.model.get_topic_terms(i)]
+            topic_words = [x[0] for x in self.model.get_topic_terms(i, topn=n_words)]
             all_topic_words.extend(topic_words)
         unique_topic_words = set(all_topic_words)
         topic_var = len(unique_topic_words) / len(all_topic_words)
         return topic_var
+    
+    def interpretability_score(self):
+        interpretability = self.coherence_score() * self.diversity_score()
+        return interpretability
+
+    def perplexity_score(self):
+        perplexity = self.model.log_perplexity(self.docs_matrix)
+        return perplexity
 
     def print_topics(self):
         for idx, topic in self.model.print_topics(-1):
             print(f'Topic: {idx} - Words: {topic}')
+
+    def plot_topics(self, n_words=5):
+        # get ncols and nrows from n_topics
+        max_cols = 5
+        ncols = min(self.n_topics, max_cols)
+        nrows = (self.n_topics // max_cols) + 1
+        if self.n_topics % max_cols == 0:
+            nrows -= 1
+        
+        fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(4*ncols, 4*nrows))
+        fig.tight_layout(pad=4) # add padding
+        
+        ax = ax.flatten()
+        for topic_idx, topic in enumerate(self.model.show_topics(num_words=n_words)):
+            if topic_idx >= ncols * nrows:
+                break  # Only plot as many topics as subplots available
+            
+            topics = topic[1].split(' + ')
+            topics = [topic.split('*') for topic in topics]
+            topics = [[float(weight), word.strip('"')] for weight, word in topics]
+            topics_df = pd.DataFrame(topics, columns=['weight', 'word'])
+            
+            # Plot in the appropriate subplot axis
+            topics_df.plot(kind='bar', x='word', y='weight', title=f'Topic {topic_idx+1}', legend=False, ax=ax[topic_idx])
+            ax[topic_idx].set_xlabel('') # remove x-axis label
+            ax[topic_idx].set_xticklabels(topics_df['word'], rotation=20, ha='right') # rotate x ticks
+
+        plt.show()
